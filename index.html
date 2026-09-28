@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ピンポン球よけ｜動体視力トレーニング</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --hall:#141a33; --floor:#6b2a2f; --ball:#fbfaf5; --plus:#6ef2c8; --minus:#ff5a6e; --amber:#ffc15e; --ink:#f3f1ea; --mute:#a6abc4; --line:#ffffff1f;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --hall:#141a33; --ink:#f3f1ea; } }
+:root[data-theme="dark"]{ --hall:#141a33; --ink:#f3f1ea; }
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;overflow:hidden;background:var(--hall);color:var(--ink);
+  font-family:"M PLUS 1","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+#stage canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+.hud{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 0;pointer-events:none;font-variant-numeric:tabular-nums}
+.score{font-weight:900;font-size:clamp(28px,6vw,44px);line-height:1}
+.sub{font-size:13px;color:var(--mute);margin-top:6px}
+.clock{font-weight:900;font-size:clamp(22px,4.5vw,30px);line-height:1;text-align:right}
+.quit{pointer-events:auto;margin-top:8px;font-size:13px;padding:6px 14px;background:#ffffff1a;color:var(--ink)}
+.pop{position:fixed;left:50%;top:30%;transform:translateX(-50%);font-weight:900;font-size:22px;pointer-events:none;opacity:0;white-space:nowrap}
+.pop.show{animation:pop .8s ease-out}
+@keyframes pop{0%{opacity:1;transform:translate(-50%,6px) scale(.92)}100%{opacity:0;transform:translate(-50%,-24px)}}
+.count{position:fixed;inset:0;display:grid;place-items:center;font-weight:900;font-size:min(28vw,160px);pointer-events:none;opacity:.9}
+
+.screen{position:fixed;inset:0;overflow-y:auto;display:flex;justify-content:center;padding:28px 20px 40px;
+  background:linear-gradient(180deg,#141a33f0 0%,#141a33e6 60%,#3a1c28ee 100%)}
+.panel{width:min(560px,100%);margin:auto 0}
+h1{margin:0;font-weight:900;font-size:clamp(34px,9vw,60px);line-height:1.05;letter-spacing:.01em}
+h1 .dot{display:inline-block;width:.42em;height:.42em;border-radius:50%;background:var(--ball);margin-left:.12em;
+  box-shadow:0 0 0 .08em #ffffff22;vertical-align:.12em}
+.tag{margin:12px 0 22px;color:var(--mute);font-size:15px;line-height:1.7}
+.sets{display:grid;gap:18px;margin-bottom:22px}
+.row .rl{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:15px;font-weight:700}
+.row output{font-weight:400;color:var(--mute);font-size:14px;font-variant-numeric:tabular-nums;text-align:right}
+.rc{display:flex;align-items:center;gap:12px;margin-top:8px}
+input[type=range]{flex:1;accent-color:var(--amber);height:28px}
+.row.rand input[type=range]{opacity:.35}
+.tg{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;flex:none}
+.tg input{accent-color:var(--amber);width:18px;height:18px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.seg button{font-size:14px;padding:8px 14px;background:#ffffff14;color:var(--ink);font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--amber);color:var(--hall)}
+.rules{border-top:1px solid var(--line);padding-top:16px;margin-bottom:22px;font-size:14px;line-height:1.9}
+.rules table{border-collapse:collapse;width:100%}
+.rules td{padding:3px 0;vertical-align:top}
+.rules td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:12px}
+.p{color:var(--plus)} .m{color:var(--minus)}
+.btns{display:flex;flex-wrap:wrap;gap:12px}
+button{font:inherit;font-weight:700;font-size:17px;border:0;border-radius:999px;padding:14px 26px;cursor:pointer;color:var(--hall);background:var(--ink)}
+button.vr{background:var(--plus)}
+button:disabled{background:#ffffff22;color:var(--mute);cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+.hint{margin-top:16px;font-size:13px;color:var(--mute);line-height:1.8}
+.big{font-weight:900;font-size:clamp(52px,14vw,92px);line-height:1;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px 18px;margin:18px 0 24px}
+.grid div{font-size:13px;color:var(--mute)}
+.grid b{display:block;color:var(--ink);font-size:21px;font-variant-numeric:tabular-nums}
+.hidden{display:none!important}
+@media (prefers-reduced-motion: reduce){ .pop.show{animation-duration:.01s} }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div class="hud hidden" id="hud">
+  <div>
+    <div class="score" id="score">0</div>
+    <div class="sub" id="sub"></div>
+  </div>
+  <div style="text-align:right">
+    <div class="clock" id="clock">0:00</div>
+    <button class="quit" id="quitBtn">やめる</button>
+  </div>
+</div>
+<div class="pop" id="pop"></div>
+<div class="count hidden" id="count"></div>
+
+<div class="screen" id="title">
+  <div class="panel">
+    <h1>ピンポン球よけ<span class="dot"></span></h1>
+    <p class="tag">コーチが顔めがけてピンポン球を投げてくる。フォームから球筋を読み、当たる球だけをかわす。</p>
+
+    <div class="sets" id="sets"></div>
+
+    <div class="rules">
+      <table>
+        <tr><td>顔に向かってきた球をかわす</td><td class="p">+100</td></tr>
+        <tr><td>そのうち8cm以内のぎりぎりで見切る</td><td class="p">さらに +50</td></tr>
+        <tr><td>外れる球を動かずに見送る</td><td class="p">+50</td></tr>
+        <tr><td>外れる球に大きく反応してしまう</td><td class="m">−30</td></tr>
+        <tr><td>顔に当たる</td><td class="m">−100</td></tr>
+        <tr><td>加点は連続成功で最大2倍。減点で倍率リセット</td><td></td></tr>
+      </table>
+    </div>
+
+    <div class="btns">
+      <button class="vr" id="vrBtn" disabled>VRを確認中…</button>
+      <button id="flatBtn">ブラウザで始める</button>
+    </div>
+    <p class="hint" id="hint">PC：マウスポインタの位置へ頭が動く／矢印キーでも可<br>スマホ：スワイプで頭を動かす<br>VR：実際に頭と体を動かす。トリガーで再スタート</p>
+  </div>
+</div>
+
+<div class="screen hidden" id="over">
+  <div class="panel">
+    <div class="sub" id="overLabel">結果</div>
+    <div class="big" id="finalScore">0</div>
+    <div class="grid">
+      <div>回避率<b id="stDodge">-</b></div>
+      <div>被弾<b id="stHit">-</b></div>
+      <div>見送り判断<b id="stJudge">-</b></div>
+      <div>平均反応時間<b id="stReact">-</b></div>
+      <div>平均回避幅<b id="stMargin">-</b></div>
+      <div>ぎりぎり見切り<b id="stTight">-</b></div>
+    </div>
+    <div class="btns">
+      <button id="retryBtn">同じ設定でもう一度</button>
+      <button class="vr" id="toTitle">設定を変える</button>
+    </div>
+    <p class="hint" id="bestMsg"></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const show = (id, on) => $(id).classList.toggle('hidden', !on);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+  // ================= 設定 =================
+  const RANGES = {
+    dist:  { label: 'コーチとの距離', min: 1, max: 3, step: 0.1, fmt: v => v.toFixed(1) + ' m' },
+    speed: { label: '球速', min: 3, max: 15, step: 0.5, fmt: v => v.toFixed(1) + ' m/s（' + Math.round(v * 3.6) + ' km/h）' },
+    gap:   { label: '連射間隔', min: 0.6, max: 3, step: 0.1, fmt: v => v.toFixed(1) + ' 秒ごと' },
+  };
+  const SEGS = {
+    fake: { label: '外れる球の割合', opts: [[0, 'なし'], [0.2, '少なめ'], [0.4, '多め']] },
+    dur:  { label: 'プレイ時間', opts: [[60, '1分'], [120, '2分'], [180, '3分'], [300, '5分']] },
+    size: { label: '球の見え方', opts: [[1, '実寸 40mm'], [1.5, '1.5倍'], [2, '2倍']] },
+  };
+  const S = { dist: 2, distR: false, speed: 6, speedR: false, gap: 1.5, gapR: false, fake: 0.2, dur: 180, size: 1 };
+  try { Object.assign(S, JSON.parse(localStorage.getItem('pingpong-settings') || '{}')); } catch (e) {}
+  const saveS = () => { try { localStorage.setItem('pingpong-settings', JSON.stringify(S)); } catch (e) {} };
+
+  const sets = $('sets');
+  for (const [k, r] of Object.entries(RANGES)) {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<div class="rl"><span>${r.label}</span><output id="o-${k}"></output></div>
+      <div class="rc"><input type="range" id="s-${k}" min="${r.min}" max="${r.max}" step="${r.step}" value="${S[k]}" aria-label="${r.label}">
+      <label class="tg"><input type="checkbox" id="r-${k}" ${S[k + 'R'] ? 'checked' : ''}><span>ランダム</span></label></div>`;
+    sets.appendChild(row);
+    const sl = row.querySelector('input[type=range]'), cb = row.querySelector('input[type=checkbox]'), out = row.querySelector('output');
+    const upd = () => {
+      S[k] = +sl.value; S[k + 'R'] = cb.checked; row.classList.toggle('rand', cb.checked);
+      out.textContent = cb.checked ? `ランダム（${r.fmt(r.min).split('（')[0]}〜${r.fmt(r.max).split('（')[0]}）` : r.fmt(S[k]);
+      saveS();
+    };
+    sl.addEventListener('input', upd); cb.addEventListener('change', upd); upd();
+  }
+  for (const [k, g] of Object.entries(SEGS)) {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<div class="rl"><span>${g.label}</span></div><div class="seg" role="group" aria-label="${g.label}"></div>`;
+    const seg = row.querySelector('.seg');
+    g.opts.forEach(([v, t]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = t;
+      b.setAttribute('aria-pressed', S[k] === v);
+      b.addEventListener('click', () => { S[k] = v; seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); saveS(); });
+      seg.appendChild(b);
+    });
+    sets.appendChild(row);
+  }
+  const pick = k => S[k + 'R'] ? rand(RANGES[k].min, RANGES[k].max) : S[k];
+
+  // ================= シーン =================
+  const REACH = 0.55;  // 体からリリース点までの距離。設定距離＝リリース点から顔まで
+  const EYE = 1.6, FACE_R = 0.1, BALL_R = 0.02, G = 9.8;
+  const FB = { x: 0.55, yMin: 1.22, yMax: 1.82, vmax: 3.2 };   // 非VR時：頭の可動域と最大移動速度
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.xr.enabled = true;
+  $('stage').appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x141a33);
+  const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.02, 60);
+  camera.position.set(0, EYE, 0);
+  scene.add(camera);
+
+  scene.add(new THREE.HemisphereLight(0xdfe4ff, 0x3a1c22, 0.75));
+  const key = new THREE.DirectionalLight(0xffffff, 0.75); key.position.set(1.5, 4, 2); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x9fb4ff, 0.35); rim.position.set(-2, 3, -4); scene.add(rim);
+
+  // 練習場
+  const std = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: .8 }, o));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 14), std(0x6b2a2f, { roughness: .6 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.z = -3; scene.add(floor);
+  const wallMat = std(0x1c2447);
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(12, 5), wallMat); back.position.set(0, 2.5, -9); scene.add(back);
+  [-6, 6].forEach(x => { const w = new THREE.Mesh(new THREE.PlaneGeometry(14, 5), wallMat); w.position.set(x, 2.5, -3); w.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(w); });
+  // 距離ライン 1m・2m・3m
+  [1, 2, 3].forEach(d => {
+    const l = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.02), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .35 }));
+    l.rotation.x = -Math.PI / 2; l.position.set(0, 0.002, -d); scene.add(l);
+  });
+  // 天井の照明帯
+  for (let i = 0; i < 3; i++) {
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.25), new THREE.MeshBasicMaterial({ color: 0xfff6e0 }));
+    b.rotation.x = Math.PI / 2; b.position.set(0, 4.2, -1 - i * 3); scene.add(b);
+  }
+
+  // ---- コーチ ----
+  const coach = new THREE.Group(); scene.add(coach);
+  const pants = std(0x1a1d2b), jacket = std(0x3a7bd5), skin = std(0xd9a67e), cap = std(0x22262f), white = std(0xf0f0f0);
+  const box = (w, h, d, m, x, y, z, parent = coach) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); parent.add(o); return o; };
+  box(.15, .86, .17, pants, -.1, .43, 0); box(.15, .86, .17, pants, .1, .43, 0);
+  const torso = new THREE.Group(); torso.position.y = .86; coach.add(torso);
+  box(.44, .62, .25, jacket, 0, .31, 0, torso);
+  box(.05, .6, .255, white, -.16, .31, 0, torso); box(.05, .6, .255, white, .16, .31, 0, torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.11, 20, 14), skin); head.position.y = .76; torso.add(head);
+  const capTop = new THREE.Mesh(new THREE.SphereGeometry(.115, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), cap); capTop.position.y = .79; torso.add(capTop);
+  box(.2, .015, .12, cap, 0, .8, .1, torso);
+  // 左腕（静止）
+  const lArm = new THREE.Group(); lArm.position.set(.27, .56, 0); lArm.rotation.set(-.25, 0, .12); torso.add(lArm);
+  box(.08, .58, .08, jacket, 0, -.29, 0, lArm);
+  // 右腕（投球腕）：-x側＝プレイヤーから見て左
+  const rArm = new THREE.Group(); rArm.position.set(-.27, .56, 0); torso.add(rArm);
+  box(.08, .56, .08, jacket, 0, -.28, 0, rArm);
+  const hand = new THREE.Mesh(new THREE.SphereGeometry(.045, 12, 10), skin); hand.position.y = -.6; rArm.add(hand);
+  const heldBall = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 14, 10), std(0xfbfaf5, { emissive: 0x333333, roughness: .4 }));
+  heldBall.position.set(0, -.04, .04); hand.add(heldBall);
+  // 球かご
+  const basket = new THREE.Group(); basket.position.set(.55, 0, .1); coach.add(basket);
+  box(.02, .8, .02, pants, 0, .4, 0, basket);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(.2, .15, .18, 18, 1, true), std(0x2b2f3a, { side: THREE.DoubleSide })); bowl.position.y = .85; basket.add(bowl);
+  for (let i = 0; i < 14; i++) { const b = heldBall.clone(); b.position.set(rand(-.13, .13), .9 + rand(0, .04), rand(-.13, .13)); basket.add(b); }
+
+  const ARM = { rest: -.15, back: 2.6, fwd: -1.45 };
+  rArm.rotation.x = ARM.rest;
+
+  // 被弾フラッシュ
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(.3, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xff3050, transparent: true, opacity: 0, side: THREE.BackSide, depthTest: false }));
+  flash.renderOrder = 999; camera.add(flash);
+
+  // VR HUD
+  const hudCv = document.createElement('canvas'); hudCv.width = 1024; hudCv.height = 512;
+  const hctx = hudCv.getContext('2d'); const hudTex = new THREE.CanvasTexture(hudCv);
+  const hudMesh = new THREE.Mesh(new THREE.PlaneGeometry(.8, .4), new THREE.MeshBasicMaterial({ map: hudTex, transparent: true, depthTest: false }));
+  hudMesh.position.set(0, -.34, -1.2); hudMesh.rotation.x = -.25; hudMesh.renderOrder = 1000; hudMesh.visible = false; camera.add(hudMesh);
+
+  const ballGeo = new THREE.SphereGeometry(1, 16, 12);
+  const ballMat = std(0xfbfaf5, { emissive: 0x444444, roughness: .35 });
+
+  // ================= 状態 =================
+  let state = 'title';   // title | ready | playing | over
+  let t = 0, score = 0, streak = 0, countdown = 0, flashA = 0, popT = 0, popText = '', popColor = '#fff';
+  let st;                // 統計
+  const balls = [];
+  const C = { phase: 'idle', t0: 0, windStart: 0, W: .4, nextRelease: 0, speed: 6, targetZ: -2, followDur: .3 };
+  const THROW = .1;
+
+  let best = 0; try { best = +localStorage.getItem('pingpong-best') || 0; } catch (e) {}
+
+  const mult = () => 1 + Math.min(streak, 20) * 0.05;
+  const face = () => new THREE.Vector3(camera.position.x, camera.position.y - .03, camera.position.z);
+
+  // ---- 効果音 ----
+  let actx = null;
+  const unlockAudio = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} };
+  function sfx(kind, vol = 1) {
+    if (!actx) return;
+    const P = { hit: ['square', 300, 90, .18, .22], ok: ['sine', 740, 1110, .12, .16], tight: ['sine', 990, 1480, .16, .18],
+      bad: ['sawtooth', 200, 120, .15, .12], tok: ['triangle', 1800, 1200, .03, .12], go: ['square', 660, 660, .1, .07] }[kind];
+    const o = actx.createOscillator(), g = actx.createGain(), n = actx.currentTime;
+    o.type = P[0]; o.frequency.setValueAtTime(P[1], n); o.frequency.exponentialRampToValueAtTime(P[2], n + P[3]);
+    g.gain.setValueAtTime(P[4] * vol, n); g.gain.exponentialRampToValueAtTime(.0005, n + P[3]);
+    o.connect(g).connect(actx.destination); o.start(n); o.stop(n + P[3] + .02);
+  }
+
+  // ---- コーチの投球サイクル ----
+  function scheduleNext(fromT) {
+    const gap = pick('gap');
+    C.nextRelease = fromT + gap;
+    C.W = clamp(gap * .45, .25, .55);
+    C.windStart = C.nextRelease - C.W - THROW;
+    C.followDur = Math.max(.05, Math.min(.3, C.windStart - fromT - .02));
+    C.speed = pick('speed');
+    C.targetZ = -(pick('dist') + REACH);
+  }
+  function release() {
+    coach.updateMatrixWorld(true);
+    const p0 = hand.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, -.03, .05));
+    const f = face();
+    const fake = Math.random() < S.fake;
+    const ang = rand(0, Math.PI * 2), rr = fake ? rand(.26, .42) : rand(0, .05);
+    const aim = f.clone().add(new THREE.Vector3(Math.cos(ang) * rr, Math.sin(ang) * rr * .8, 0));
+    const T = p0.distanceTo(aim) / C.speed;
+    const v = new THREE.Vector3((aim.x - p0.x) / T, (aim.y - p0.y + .5 * G * T * T) / T, (aim.z - p0.z) / T);
+    const m = new THREE.Mesh(ballGeo, ballMat); m.scale.setScalar(BALL_R * S.size); m.position.copy(p0); scene.add(m);
+    balls.push({ m, v, prev: p0.clone(), fake, age: 0, judged: false, h0: camera.position.clone(), maxMove: 0, react: null });
+    st.thrown++; if (fake) st.fake++; else st.on++;
+    heldBall.visible = false;
+  }
+  function updateCoach(dt) {
+    // 距離の移動（ランダム距離のとき）
+    const dz = C.targetZ - coach.position.z;
+    coach.position.z += clamp(dz, -3 * dt, 3 * dt);
+    coach.position.y = Math.abs(dz) > .01 ? Math.abs(Math.sin(t * 12)) * .02 : 0;
+    if (state !== 'playing') { rArm.rotation.x = ARM.rest; torso.rotation.y = 0; heldBall.visible = true; return; }
+    if (C.phase === 'idle') {
+      rArm.rotation.x = ARM.rest; torso.rotation.y = 0;
+      if (t >= C.windStart) { C.phase = 'wind'; C.t0 = t; heldBall.visible = true; }
+    } else if (C.phase === 'wind') {
+      const p = clamp((t - C.t0) / C.W, 0, 1);
+      rArm.rotation.x = lerp(ARM.rest, ARM.back, ease(p)); torso.rotation.y = lerp(0, .35, ease(p));
+      if (p >= 1) { C.phase = 'throw'; C.t0 = t; }
+    } else if (C.phase === 'throw') {
+      const p = clamp((t - C.t0) / THROW, 0, 1);
+      rArm.rotation.x = lerp(ARM.back, ARM.fwd, p); torso.rotation.y = lerp(.35, -.2, p);
+      if (p >= 1) { release(); C.phase = 'follow'; C.t0 = t; scheduleNext(t); }
+    } else if (C.phase === 'follow') {
+      const p = clamp((t - C.t0) / C.followDur, 0, 1);
+      rArm.rotation.x = lerp(ARM.fwd, ARM.rest, ease(p)); torso.rotation.y = lerp(-.2, 0, p);
+      if (p >= 1) { C.phase = 'idle'; heldBall.visible = true; }
+    }
+  }
+
+  // ---- 球と判定 ----
+  function addScore(base, label, good) {
+    if (good) { const pts = Math.round(base * mult()); score += pts; streak++; popup(`${label} +${pts}`, '#6ef2c8'); }
+    else { score -= base; streak = 0; popup(`${label} −${base}`, '#ff5a6e'); }
+  }
+  function judge(b, cx, cy, f) {
+    b.judged = true;
+    const d = Math.hypot(cx - f.x, cy - f.y), hitR = FACE_R + BALL_R * S.size;
+    if (d < hitR) {
+      st.hits++; addScore(100, '被弾', false); flashA = .5; sfx('hit');
+      try { navigator.vibrate && navigator.vibrate(100); } catch (e) {} pulse();
+      b.v.set(rand(-1, 1), 1.5, -Math.abs(b.v.z) * .35);   // 顔で跳ね返る
+      return;
+    }
+    if (!b.fake) {
+      st.dodge++; const margin = d - hitR; st.marginSum += margin;
+      if (b.react != null) { st.reactSum += b.react; st.reactN++; }
+      if (margin < .08) { st.tight++; addScore(150, 'ぎりぎり見切り', true); sfx('tight'); }
+      else { addScore(100, '回避', true); sfx('ok'); }
+    } else {
+      if (b.maxMove > .12) { st.over++; addScore(30, '過剰反応', false); sfx('bad'); }
+      else { st.fakeOk++; addScore(50, '見送り', true); sfx('ok', .6); }
+    }
+  }
+  function updateBalls(dt) {
+    const f = face();
+    for (let i = balls.length - 1; i >= 0; i--) {
+      const b = balls[i], p = b.m.position;
+      b.prev.copy(p); b.age += dt;
+      b.v.y -= G * dt; p.addScaledVector(b.v, dt);
+      const r = BALL_R * S.size;
+      if (p.y < r && b.v.y < 0) { p.y = r; b.v.y *= -.8; b.v.x *= .9; b.v.z *= .9; if (Math.abs(b.v.y) > .8) sfx('tok', .5); }
+      if (!b.judged && state === 'playing') {
+        const mv = camera.position.distanceTo(b.h0);
+        b.maxMove = Math.max(b.maxMove, mv);
+        if (b.react == null && mv > .03) b.react = b.age;
+        if (b.prev.z < f.z && p.z >= f.z) {
+          const k = (f.z - b.prev.z) / (p.z - b.prev.z);
+          judge(b, lerp(b.prev.x, p.x, k), lerp(b.prev.y, p.y, k), f);
+        }
+      }
+      if (b.age > 4 || p.z > 5) { scene.remove(b.m); balls.splice(i, 1); }
+    }
+  }
+
+  // ---- 状態遷移 ----
+  function clearBalls() { balls.forEach(b => scene.remove(b.m)); balls.length = 0; }
+  function beginReady() {
+    unlockAudio(); clearBalls();
+    st = { thrown: 0, on: 0, fake: 0, hits: 0, dodge: 0, tight: 0, fakeOk: 0, over: 0, reactSum: 0, reactN: 0, marginSum: 0 };
+    t = 0; score = 0; streak = 0; state = 'ready'; countdown = 3;
+    C.phase = 'idle'; C.targetZ = -((S.distR ? rand(1, 3) : S.dist) + REACH); coach.position.z = C.targetZ;
+    C.nextRelease = 1.0; C.W = .45; C.windStart = C.nextRelease - C.W - THROW; C.speed = pick('speed');
+    const flat = !renderer.xr.isPresenting;
+    show('title', false); show('over', false); show('hud', flat); show('count', flat);
+  }
+  function finish(reason) {
+    state = 'over'; clearBalls();
+    const isBest = score > best && reason === 'time'; if (isBest) { best = score; try { localStorage.setItem('pingpong-best', best); } catch (e) {} }
+    const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '-';
+    $('overLabel').textContent = reason === 'time' ? '結果' : '途中終了（ベスト記録の対象外）';
+    $('finalScore').textContent = score;
+    $('stDodge').textContent = pct(st.dodge, st.on);
+    $('stHit').textContent = `${st.hits} / ${st.on + st.fake}球`;
+    $('stJudge').textContent = pct(st.fakeOk, st.fake);
+    $('stReact').textContent = st.reactN ? Math.round(st.reactSum / st.reactN * 1000) + ' ms' : '-';
+    $('stMargin').textContent = st.dodge ? (st.marginSum / st.dodge * 100).toFixed(1) + ' cm' : '-';
+    $('stTight').textContent = st.tight + '回';
+    $('bestMsg').textContent = isBest ? 'ベスト更新' : (best ? `ベスト ${best}` : '');
+    if (!renderer.xr.isPresenting) { show('over', true); show('hud', false); show('count', false); }
+  }
+  function toTitle() { state = 'title'; clearBalls(); ['over', 'hud', 'count'].forEach(id => show(id, false)); show('title', true); }
+
+  // ---- HUD ----
+  const popEl = $('pop');
+  function popup(text, color) {
+    popText = text; popColor = color; popT = .8;
+    popEl.textContent = text; popEl.style.color = color;
+    popEl.classList.remove('show'); void popEl.offsetWidth; popEl.classList.add('show');
+  }
+  const fmtClock = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  function updateDomHud() {
+    $('score').textContent = score;
+    $('clock').textContent = fmtClock(S.dur - t);
+    const dist = -coach.position.z - REACH;
+    $('sub').textContent = `連続 ${streak}　×${mult().toFixed(2)}　距離 ${dist.toFixed(1)}m　球速 ${Math.round(C.speed * 3.6)}km/h`;
+    if (state === 'ready') $('count').textContent = Math.ceil(countdown);
+  }
+  let vrKey = '';
+  function drawVrHud() {
+    let msg = '', small = '';
+    if (state === 'ready') msg = String(Math.ceil(countdown));
+    else if (state === 'over') { msg = `スコア ${score}`; small = 'トリガーでもう一度'; }
+    else if (state === 'title') { msg = 'ピンポン球よけ'; small = 'トリガーで開始'; }
+    const pop = popT > 0 ? popText : '';
+    const k = [state, score, streak, fmtClock(S.dur - t), msg, small, pop].join('|');
+    if (k === vrKey) return; vrKey = k;
+    const c = hctx; c.clearRect(0, 0, 1024, 512); c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = '#f3f1ea'; c.font = '900 56px "M PLUS 1", sans-serif';
+    c.fillText(`${score}　${fmtClock(S.dur - t)}`, 512, 430);
+    c.font = '700 34px "M PLUS 1", sans-serif'; c.fillStyle = '#a6abc4'; c.fillText(`連続 ${streak}　×${mult().toFixed(2)}`, 512, 485);
+    if (msg) { c.font = '900 96px "M PLUS 1", sans-serif'; c.fillStyle = '#f3f1ea'; c.fillText(msg, 512, 200); }
+    if (small) { c.font = '700 40px "M PLUS 1", sans-serif'; c.fillStyle = '#a6abc4'; c.fillText(small, 512, 300); }
+    if (pop) { c.font = '900 52px "M PLUS 1", sans-serif'; c.fillStyle = popColor; c.fillText(pop, 512, 90); }
+    hudTex.needsUpdate = true;
+  }
+
+  // ================= 入力（非VR） =================
+  const target = { x: 0, y: EYE }, keys = {};
+  let drag = null;
+  addEventListener('pointermove', e => {
+    if (renderer.xr.isPresenting || state === 'title') return;
+    if (e.pointerType === 'mouse') {
+      const nx = clamp(((e.clientX / innerWidth) * 2 - 1) * 1.15, -1, 1), ny = clamp(((e.clientY / innerHeight) * 2 - 1) * 1.15, -1, 1);
+      target.x = nx * FB.x; target.y = lerp(FB.yMax, FB.yMin, (ny + 1) / 2);
+    } else if (drag && drag.id === e.pointerId) {
+      const s = Math.min(innerWidth, innerHeight);
+      target.x = clamp(target.x + (e.clientX - drag.x) / s * 1.6, -FB.x, FB.x);
+      target.y = clamp(target.y - (e.clientY - drag.y) / s * 1.6, FB.yMin, FB.yMax);
+      drag.x = e.clientX; drag.y = e.clientY;
+    }
+  });
+  renderer.domElement.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; });
+  addEventListener('pointerup', e => { if (drag && drag.id === e.pointerId) drag = null; });
+  addEventListener('pointercancel', () => { drag = null; });
+  addEventListener('keydown', e => { keys[e.key] = true; });
+  addEventListener('keyup', e => { keys[e.key] = false; });
+
+  function updateFlatHead(dt) {
+    const k = 1.4 * dt;
+    if (keys.ArrowLeft || keys.a) target.x -= k;
+    if (keys.ArrowRight || keys.d) target.x += k;
+    if (keys.ArrowUp || keys.w) target.y += k;
+    if (keys.ArrowDown || keys.s) target.y -= k;
+    target.x = clamp(target.x, -FB.x, FB.x); target.y = clamp(target.y, FB.yMin, FB.yMax);
+    // 体の慣性：追従しつつ最大速度で制限
+    const dx = target.x - camera.position.x, dy = target.y - camera.position.y;
+    let vx = dx * 14, vy = dy * 14; const sp = Math.hypot(vx, vy);
+    if (sp > FB.vmax) { vx *= FB.vmax / sp; vy *= FB.vmax / sp; }
+    camera.position.x += vx * dt; camera.position.y += vy * dt;
+    camera.rotation.set(0, 0, clamp(-vx * .03, -.1, .1));
+  }
+
+  // ================= VR =================
+  const vrBtn = $('vrBtn'), ctrls = [];
+  for (let i = 0; i < 2; i++) {
+    const c = renderer.xr.getController(i);
+    c.addEventListener('select', () => { if (state === 'over' || state === 'title') beginReady(); });
+    c.addEventListener('connected', e => { c.userData.gp = e.data && e.data.gamepad; });
+    scene.add(c); ctrls.push(c);
+  }
+  function pulse() { ctrls.forEach(c => { const h = c.userData.gp && c.userData.gp.hapticActuators && c.userData.gp.hapticActuators[0]; try { h && h.pulse(.7, 100); } catch (e) {} }); }
+  if (navigator.xr && navigator.xr.isSessionSupported) {
+    navigator.xr.isSessionSupported('immersive-vr').then(ok => { vrBtn.disabled = !ok; vrBtn.textContent = ok ? 'VRで始める' : 'VR非対応の環境'; })
+      .catch(() => { vrBtn.textContent = 'VR非対応の環境'; });
+  } else vrBtn.textContent = 'VR非対応の環境';
+
+  vrBtn.addEventListener('click', async () => {
+    unlockAudio();
+    try {
+      const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] });
+      renderer.xr.setReferenceSpaceType('local-floor');
+      await renderer.xr.setSession(session);
+      session.addEventListener('end', () => {
+        camera.position.set(0, EYE, 0); camera.quaternion.identity(); target.x = 0; target.y = EYE;
+        hudMesh.visible = false; renderer.setSize(innerWidth, innerHeight); toTitle();
+      });
+      hudMesh.visible = true; beginReady();
+    } catch (err) {
+      $('hint').textContent = 'VRを開始できませんでした。ヘッドセットのブラウザで、このページを単独のタブとして開いてから試してください。';
+    }
+  });
+  $('flatBtn').addEventListener('click', () => { camera.position.set(0, EYE, 0); target.x = 0; target.y = EYE; beginReady(); });
+  $('retryBtn').addEventListener('click', () => { camera.position.set(0, EYE, 0); target.x = 0; target.y = EYE; beginReady(); });
+  $('toTitle').addEventListener('click', toTitle);
+  $('quitBtn').addEventListener('click', () => finish('quit'));
+  addEventListener('keydown', e => { if (e.key === 'Escape' && state === 'playing') finish('quit'); });
+
+  addEventListener('resize', () => {
+    if (renderer.xr.isPresenting) return;
+    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight);
+  });
+
+  // ================= ループ =================
+  coach.position.z = C.targetZ = -(S.dist + REACH);
+  let last = performance.now();
+  renderer.setAnimationLoop(() => {
+    const now = performance.now(), dt = Math.min((now - last) / 1000, .05); last = now;
+    const xr = renderer.xr.isPresenting;
+    if (!xr) updateFlatHead(dt);
+    if (state === 'title' && !xr) { C.targetZ = -(S.dist + REACH); }
+
+    if (state === 'ready') { countdown -= dt; if (countdown <= 0) { state = 'playing'; show('count', false); sfx('go'); } }
+    else if (state === 'playing') { t += dt; if (t >= S.dur) finish('time'); }
+
+    updateCoach(dt);
+    updateBalls(dt);
+
+    flashA = Math.max(0, flashA - dt * 1.5); flash.material.opacity = flashA;
+    popT = Math.max(0, popT - dt);
+    if (xr) drawVrHud(); else if (state === 'playing' || state === 'ready') updateDomHud();
+    renderer.render(scene, camera);
+  });
+})();
+</script>
+</body>
+</html>
